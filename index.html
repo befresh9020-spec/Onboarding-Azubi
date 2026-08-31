@@ -1,0 +1,2390 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Der Laufzettel – Rundgang durch die Dienststelle</title>
+
+<style>
+/* ============================================================
+   FARBEN (bewusst als Hex, keine Custom Properties)
+
+   Seite dunkel   #12243c / #0d1b2e     Karte      #ffffff
+   Text           #1f3348               gedaempft  #5c7186
+   Hell auf dunkel#e8eef5 / #93a8bd
+
+   Rechtskreis-Codierung:
+   SGB III  blau      #1a7fd4  hell #e3f0fc
+   SGB II   gruen     #0f7a63  hell #e0f3ee
+   EStG     violett   #7048c0  hell #eee7fb
+   Haus     bernstein #c46a08  hell #fdf0dd
+
+   Erfolg #0f7a63    Fehler #c73f33 / #fbeae8
+   ============================================================ */
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: rgba(26, 127, 212, .14);
+    background: #12243c;
+    background-image:
+        radial-gradient(circle at 12% -5%, #1d3a5e 0%, rgba(29,58,94,0) 55%),
+        radial-gradient(circle at 88% 0%, #16324f 0%, rgba(22,50,79,0) 45%);
+    background-attachment: fixed;
+    color: #1f3348;
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+}
+
+h1, h2, h3 {
+    font-family: "Segoe UI Variable Display", "Segoe UI Semibold", "Segoe UI", Arial, sans-serif;
+    font-weight: 700;
+    letter-spacing: -.022em;
+    color: #14263f;
+}
+
+button { font: inherit; cursor: pointer; }
+
+:focus-visible { outline: 3px solid #f0a92c; outline-offset: 3px; }
+
+/* Klebende Kopfzeile: Sprungziele und der Fokus dürfen nicht
+   darunter verschwinden. */
+#start, #grundriss, #detail, #online, #finish, #detailTitle { scroll-margin-top: 78px; }
+.plan-room:focus-visible { outline: none; }
+
+.mono {
+    font-family: Consolas, "SF Mono", "Courier New", monospace;
+}
+
+.eyebrow {
+    margin: 0;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: #7b90a5;
+}
+
+/* ---------- Kopfzeile mit Laufzettel ---------- */
+
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: rgba(13, 27, 46, .93);
+    border-bottom: 1px solid #24405f;
+}
+
+.topbar-inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.brand { display: flex; align-items: center; gap: 11px; }
+
+.brand-mark {
+    width: 38px; height: 38px;
+    flex: 0 0 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: #1a7fd4;
+    color: #ffffff;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    box-shadow: 0 4px 14px rgba(26, 127, 212, .45);
+}
+
+.brand-title {
+    font-family: "Segoe UI Variable Display", "Segoe UI", Arial, sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.2;
+    letter-spacing: -.01em;
+}
+
+.brand-sub {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 10.5px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #7f97af;
+}
+
+.stampcard {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px 6px 14px;
+    border: 1px solid #2a4867;
+    border-radius: 999px;
+    background: #162c48;
+}
+
+.stampcard-label {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #8fa6bd;
+    white-space: nowrap;
+}
+
+.slots { display: flex; gap: 5px; }
+
+.slot {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 1.5px dashed #43648a;
+    background: transparent;
+}
+
+.slot.is-filled {
+    border: 0;
+    background: #e2001a;
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10.5l3.2 3.2L15 6.8' fill='none' stroke='%23ffffff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    transform: rotate(-9deg);
+    animation: stamp .32s cubic-bezier(.2,1.5,.5,1);
+}
+
+@keyframes stamp {
+    0%   { transform: rotate(-9deg) scale(2.1); opacity: 0; }
+    60%  { transform: rotate(-9deg) scale(.92); opacity: 1; }
+    100% { transform: rotate(-9deg) scale(1); }
+}
+
+/* ---------- Grundgeruest ---------- */
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 22px 18px 70px; }
+
+.sheet {
+    position: relative;
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 22px;
+    margin-bottom: 18px;
+    box-shadow: 0 18px 40px rgba(6, 16, 30, .28);
+}
+
+.sheet-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.sheet-head h2 { margin: 5px 0 0; font-size: 24px; }
+
+/* ---------- Einstieg (direkt auf dunklem Grund) ---------- */
+
+.intro { color: #e8eef5; padding: 14px 4px 30px; }
+.intro .eyebrow { color: #ffb648; }
+
+.intro h1 {
+    margin: 10px 0 14px;
+    color: #ffffff;
+    font-size: 34px;
+    line-height: 1.08;
+    letter-spacing: -.035em;
+}
+
+.intro h1 em {
+    font-style: normal;
+    color: #ffb648;
+}
+
+.intro p { margin: 0 0 12px; max-width: 58ch; color: #c3d2e0; }
+
+.intro-side {
+    margin-top: 18px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 1px solid #2a4867;
+    background: #162c48;
+}
+
+.intro-side p { margin: 8px 0 0; font-size: 15px; }
+.intro-side b { color: #ffffff; }
+
+.rule-chip {
+    display: inline-block;
+    margin: 0 4px 4px 0;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.chip-blau { background: #e3f0fc; color: #12558f; }
+.chip-gruen { background: #e0f3ee; color: #0b5747; }
+.chip-violett { background: #eee7fb; color: #4f2f8c; }
+.chip-bernstein { background: #fdf0dd; color: #8a4b06; }
+.chip-leitung { background: #e4eaf2; color: #24394f; }
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 12px 20px;
+    border: 0;
+    border-radius: 12px;
+    background: #1a7fd4;
+    color: #ffffff;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 8px 20px rgba(26, 127, 212, .35);
+}
+
+.btn:hover { background: #1569b3; }
+
+.btn-quiet {
+    background: transparent;
+    color: #a9bdd1;
+    box-shadow: none;
+    border: 1px solid #35577c;
+}
+
+.btn-quiet:hover { background: #162c48; color: #ffffff; }
+
+.btn-light {
+    background: #14263f;
+    box-shadow: none;
+}
+
+.btn-light:hover { background: #24405f; }
+
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+
+/* ---------- Grundriss ---------- */
+
+.restored {
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: #fdf0dd;
+    color: #7a4306;
+    font-size: 14.5px;
+}
+
+.plan-frame {
+    border-radius: 14px;
+    background: #f2f6fa;
+    padding: 8px;
+    overflow-x: auto;
+}
+
+.plan { display: block; width: 100%; height: auto; }
+
+.plan-room { cursor: pointer; }
+
+.plan-shell {
+    fill: #ffffff;
+    stroke: #cfdbe6;
+    stroke-width: 2;
+}
+
+.plan-gap { fill: #ffffff; }
+.plan-swing { fill: none; stroke: #ccd8e3; stroke-width: 1.2; }
+
+.plan-num { font-family: Consolas, "Courier New", monospace; font-size: 12.5px; fill: #8397aa; }
+
+.plan-title {
+    font-family: "Segoe UI Variable Display", "Segoe UI", Arial, sans-serif;
+    font-size: 17.5px;
+    font-weight: 700;
+    fill: #14263f;
+}
+
+.plan-sub { font-family: "Segoe UI", Arial, sans-serif; font-size: 12.5px; fill: #6c8195; }
+
+.plan-hint {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 10.5px;
+    letter-spacing: .12em;
+    fill: #90a4b6;
+}
+
+/* Der hochformatige Grundriss hat eine viel kleinere viewBox.
+   Damit die Beschriftung auf dem Telefon gleich groß ankommt,
+   werden die Schriftgrade dort größer gesetzt. */
+.plan-hoch .plan-num { font-size: 9.5px; }
+.plan-hoch .plan-title { font-size: 13.5px; }
+.plan-marker text { font-size: 12.5px; }
+.plan-hoch .plan-marker text { font-size: 14px; }
+
+.plan-room { transition: transform .18s ease; }
+
+.plan-room:focus-visible { transform: translateY(-4px); }
+
+@media (hover: hover) {
+    .plan-room:hover { transform: translateY(-4px); }
+}
+
+.plan-room:active .plan-shell { stroke-width: 3.5; }
+
+.plan-room:hover .plan-shell,
+.plan-room:focus-visible .plan-shell { stroke-width: 3; }
+
+/* Farbcodierung nach Rechtskreis */
+.farbe-blau .plan-disc { fill: #e3f0fc; }
+.farbe-blau .plan-icon { color: #1a7fd4; }
+.farbe-blau .plan-num { fill: #1a7fd4; }
+.farbe-blau:hover .plan-shell, .farbe-blau:focus-visible .plan-shell { stroke: #1a7fd4; }
+
+.farbe-gruen .plan-disc { fill: #e0f3ee; }
+.farbe-gruen .plan-icon { color: #0f7a63; }
+.farbe-gruen .plan-num { fill: #0f7a63; }
+.farbe-gruen:hover .plan-shell, .farbe-gruen:focus-visible .plan-shell { stroke: #0f7a63; }
+
+.farbe-violett .plan-disc { fill: #eee7fb; }
+.farbe-violett .plan-icon { color: #7048c0; }
+.farbe-violett .plan-num { fill: #7048c0; }
+.farbe-violett:hover .plan-shell, .farbe-violett:focus-visible .plan-shell { stroke: #7048c0; }
+
+.farbe-leitung .plan-disc { fill: #e4eaf2; }
+.farbe-leitung .plan-icon { color: #2f4a68; }
+.farbe-leitung .plan-num { fill: #2f4a68; }
+.farbe-leitung:hover .plan-shell, .farbe-leitung:focus-visible .plan-shell { stroke: #2f4a68; }
+
+.farbe-bernstein .plan-disc { fill: #fdf0dd; }
+.farbe-bernstein .plan-icon { color: #c46a08; }
+.farbe-bernstein .plan-num { fill: #c46a08; }
+.farbe-bernstein:hover .plan-shell, .farbe-bernstein:focus-visible .plan-shell { stroke: #c46a08; }
+
+/* Stempel auf dem Raum */
+.plan-stamp { display: none; }
+
+.plan-room.is-done .plan-stamp { display: block; }
+
+.plan-stamp-in {
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+.plan-room.is-done .plan-stamp-in { animation: stampdrop .34s cubic-bezier(.2,1.5,.5,1); }
+
+@keyframes stampdrop {
+    0%   { opacity: 0; transform: scale(2.4); }
+    60%  { opacity: 1; transform: scale(.94); }
+    100% { transform: scale(1); }
+}
+
+.plan-room.is-done .plan-shell { fill: #fffaf8; stroke: #e6c3bd; }
+.plan-room.is-done .plan-gap { fill: #fffaf8; }
+.plan-room.is-done .plan-hint { display: none; }
+
+/* Stempelfarbe: BA-Rot laut Handbuch Erscheinungsbild eintragen.
+   Zu ersetzen sind alle Vorkommen von #e2001a (CSS und Skript). */
+.stamp-ring {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 7.4px;
+    font-weight: 700;
+    letter-spacing: .9px;
+}
+
+.stamp-nr {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .6px;
+}
+
+.plan-room.is-active .plan-shell { stroke-dasharray: 9 6; }
+
+.plan-marker { transition: transform .55s cubic-bezier(.5,.05,.2,1); }
+
+.plan-route { stroke: #c3d2de; stroke-width: 2; stroke-dasharray: 3 8; stroke-linecap: round; fill: none; }
+
+.legend {
+    display: flex;
+    gap: 6px 20px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    font-size: 13px;
+    color: #5c7186;
+}
+
+.legend span { display: flex; align-items: center; gap: 8px; }
+.legend i { width: 13px; height: 13px; border-radius: 4px; flex: 0 0 13px; }
+
+/* ---------- Raumliste (schmale Bildschirme) ---------- */
+
+.room-list { display: grid; gap: 8px; margin-top: 16px; }
+
+.room-list-btn {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #dde6ee;
+    border-left-width: 5px;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #14263f;
+    text-align: left;
+}
+
+.room-list-btn.farbe-blau { border-left-color: #1a7fd4; }
+.room-list-btn.farbe-gruen { border-left-color: #0f7a63; }
+.room-list-btn.farbe-violett { border-left-color: #7048c0; }
+.room-list-btn.farbe-bernstein { border-left-color: #c46a08; }
+.room-list-btn.farbe-leitung { border-left-color: #2f4a68; }
+
+.room-list-btn b { font-weight: 600; }
+.room-list-btn .rl-num { font-family: Consolas, "Courier New", monospace; font-size: 12px; color: #8397aa; }
+
+.room-list-btn .rl-state {
+    margin-left: auto;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 11px;
+    letter-spacing: .1em;
+    color: #8397aa;
+}
+
+.room-list-btn.is-done .rl-state { color: #b00015; font-weight: 700; }
+
+/* ---------- Detailkarte ---------- */
+
+.detail-stripe {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    border-radius: 18px 18px 0 0;
+    background: #1a7fd4;
+}
+
+.acc-gruen .detail-stripe { background: #0f7a63; }
+.acc-violett .detail-stripe { background: #7048c0; }
+.acc-bernstein .detail-stripe { background: #c46a08; }
+.acc-leitung .detail-stripe { background: #2f4a68; }
+
+.detail-head { display: flex; gap: 15px; align-items: flex-start; }
+
+.detail-icon {
+    width: 56px; height: 56px;
+    flex: 0 0 56px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    background: #e3f0fc;
+    color: #1a7fd4;
+}
+
+.acc-gruen .detail-icon { background: #e0f3ee; color: #0f7a63; }
+.acc-violett .detail-icon { background: #eee7fb; color: #7048c0; }
+.acc-bernstein .detail-icon { background: #fdf0dd; color: #c46a08; }
+.acc-leitung .detail-icon { background: #e4eaf2; color: #2f4a68; }
+
+.detail-icon svg { width: 30px; height: 30px; }
+
+.detail-head h2 { margin: 2px 0 6px; font-size: 27px; line-height: 1.12; }
+.detail-head h2:focus { outline: none; }
+
+.tag {
+    display: inline-block;
+    padding: 3px 11px;
+    border-radius: 999px;
+    background: #e3f0fc;
+    color: #12558f;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .05em;
+}
+
+.acc-gruen .tag { background: #e0f3ee; color: #0b5747; }
+.acc-violett .tag { background: #eee7fb; color: #4f2f8c; }
+.acc-bernstein .tag { background: #fdf0dd; color: #8a4b06; }
+.acc-leitung .tag { background: #e4eaf2; color: #24394f; }
+
+.detail-text { margin: 18px 0; max-width: 68ch; font-size: 16.5px; }
+
+/* Deutsche Komposita sprengen sonst enge Spalten. Silbentrennung
+   greift, weil das Dokument lang="de" gesetzt hat. Im SVG wirkt
+   davon nichts – dort übernimmt umbruch() im Skript. */
+h1, h2, h3, p, .fact span, .answer, .event b, .compass small {
+    overflow-wrap: break-word;
+}
+
+.fact span, .event b, .detail-head h2, .compass span {
+    -webkit-hyphens: auto;
+    hyphens: auto;
+}
+
+.facts { display: grid; gap: 10px; margin: 20px 0; }
+
+.fact { background: #f4f8fb; border-radius: 12px; padding: 13px 15px; }
+
+.fact strong {
+    display: block;
+    margin-bottom: 3px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 10.5px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #7b90a5;
+    font-weight: 400;
+}
+
+.fact span { color: #14263f; font-size: 15px; }
+
+.note {
+    display: flex;
+    gap: 13px;
+    border-radius: 14px;
+    background: #fdf0dd;
+    padding: 15px 17px;
+    margin: 20px 0;
+    color: #6b3d05;
+}
+
+.note-mark {
+    flex: 0 0 26px;
+    width: 26px; height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #c46a08;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.note strong { display: block; color: #5a3304; }
+
+/* ---------- Aufgabe ---------- */
+
+.quiz { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e6edf3; }
+.question { margin: 8px 0 14px; font-size: 18px; color: #14263f; font-weight: 600; }
+.answers { display: grid; gap: 9px; }
+
+.answer {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    padding: 13px 15px;
+    border: 1.5px solid #e0e8ef;
+    border-radius: 13px;
+    background: #ffffff;
+    color: #33495c;
+    text-align: left;
+    transition: transform .12s ease;
+}
+
+@media (hover: hover) {
+    .answer:hover:not(:disabled) { border-color: #1a7fd4; background: #f6fafd; transform: translateX(3px); }
+    .room-list-btn:hover { background: #f5f9fc; }
+}
+
+.answer:active:not(:disabled) { background: #eef5fb; }
+
+.answer-key {
+    flex: 0 0 28px;
+    width: 28px; height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    background: #f0f5f9;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: #5c7186;
+}
+
+.answer.is-right { border-color: #16b184; background: #e6f7f1; color: #0b5747; }
+.answer.is-right .answer-key { background: #16b184; color: #ffffff; }
+.answer.is-wrong { border-color: #e6a49c; background: #fbeae8; color: #973026; }
+.answer.is-wrong .answer-key { background: #c73f33; color: #ffffff; }
+.answer:disabled { cursor: default; }
+
+.feedback { margin-top: 14px; padding: 13px 16px; border-radius: 13px; font-size: 15px; }
+.feedback:empty { display: none; }
+.feedback.good { background: #e6f7f1; color: #0b5747; }
+.feedback.bad { background: #fbeae8; color: #973026; }
+
+.online-icon {
+    width: 44px; height: 44px;
+    flex: 0 0 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 13px;
+    background: #e3f0fc;
+    color: #1a7fd4;
+}
+
+.online-icon svg { width: 25px; height: 25px; }
+
+.online-links { display: grid; gap: 8px; }
+.online-links .btn { justify-content: center; font-size: 15px; }
+
+.next-wrap:empty { display: none; }
+.next-wrap { margin-top: 16px; }
+
+.next-btn { width: 100%; justify-content: center; }
+
+.room-box {
+    margin-top: 16px;
+    border-radius: 12px;
+    background: #f4f8fb;
+    padding: 4px 6px;
+}
+
+.room-box > summary {
+    padding: 10px 12px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 12.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #5c7186;
+    cursor: pointer;
+}
+
+.room-box[open] > summary { color: #14263f; }
+.room-box .room-list { margin: 4px 6px 8px; }
+
+.intranet {
+    margin-top: 22px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: #f4f8fb;
+}
+
+/* ---------- Normenhierarchie ---------- */
+
+.norm-stufen {
+    counter-reset: stufe;
+    list-style: none;
+    margin: 18px 0;
+    padding: 0;
+    display: grid;
+    gap: 9px;
+}
+
+.norm-stufe {
+    counter-increment: stufe;
+    display: flex;
+    gap: 13px;
+    align-items: flex-start;
+    border-radius: 13px;
+    border-left: 5px solid #1a7fd4;
+    background: #f4f8fb;
+    padding: 14px 16px;
+}
+
+.norm-stufe::before {
+    content: counter(stufe);
+    flex: 0 0 26px;
+    width: 26px; height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #1a7fd4;
+    color: #ffffff;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.norm-stufe b { color: #14263f; margin-right: 8px; }
+
+.norm-stufe p { margin: 5px 0 0; font-size: 14.5px; color: #4d6478; }
+
+.norm-badge {
+    display: inline-block;
+    padding: 1px 9px;
+    border-radius: 999px;
+    background: #e3f0fc;
+    color: #12558f;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 11.5px;
+    white-space: nowrap;
+}
+
+.n-intern { border-left-color: #c46a08; background: #fdf7ef; }
+.n-intern::before { background: #c46a08; }
+.n-intern .norm-badge { background: #fdf0dd; color: #8a4b06; }
+
+.n-fall { border-left-color: #0f7a63; background: #f1f9f6; }
+.n-fall::before { background: #0f7a63; }
+.n-fall .norm-badge { background: #e0f3ee; color: #0b5747; }
+
+/* ---------- Zeitstrahl ---------- */
+
+.timeline { display: grid; gap: 10px; }
+
+.event {
+    position: relative;
+    background: #f4f8fb;
+    border-radius: 13px;
+    padding: 15px 17px;
+}
+
+.event-year {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: #c46a08;
+}
+
+.event b { display: block; color: #14263f; margin: 3px 0 4px; font-size: 15px; }
+.event p { margin: 0; font-size: 14px; color: #5c7186; }
+
+/* ---------- Abschluss ---------- */
+
+.finish { display: none; }
+.finish.is-visible { display: block; }
+.finish .detail-stripe { background: #e2001a; }
+.finish h2 { color: #0b5747; }
+
+.compass { display: grid; gap: 10px; margin-top: 18px; }
+
+.compass div { border-radius: 13px; padding: 15px 17px; }
+.compass .c-blau { background: #e3f0fc; }
+.compass .c-gruen { background: #e0f3ee; }
+.compass .c-violett { background: #eee7fb; }
+
+.compass b {
+    display: block;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 13px;
+    letter-spacing: .06em;
+}
+
+.c-blau b { color: #12558f; }
+.c-gruen b { color: #0b5747; }
+.c-violett b { color: #4f2f8c; }
+
+.compass span { display: block; font-size: 15.5px; font-weight: 600; color: #14263f; margin: 2px 0 4px; }
+.compass small { display: block; color: #4d6478; font-size: 13.5px; line-height: 1.45; }
+
+/* ---------- Groessere Bildschirme ---------- */
+
+@media (max-width: 699px) {
+    .wrap { padding: 16px 12px 56px; }
+    .sheet { padding: 18px 15px; border-radius: 15px; }
+    .sheet-head { margin-bottom: 13px; }
+    .sheet-head h2 { font-size: 21px; }
+    .sheet-head .eyebrow + h2 { margin-top: 3px; }
+
+    .topbar-inner { padding: 8px 12px; gap: 10px; }
+    .brand-mark { width: 34px; height: 34px; flex-basis: 34px; border-radius: 10px; font-size: 13px; }
+    .brand-title { font-size: 14.5px; }
+    .brand-sub { display: none; }
+    .stampcard { padding: 5px 10px; gap: 8px; }
+    .stampcard-label { font-size: 10px; }
+    .slot { width: 17px; height: 17px; }
+
+    .intro { padding: 8px 2px 22px; }
+    .intro h1 { font-size: 32px; }
+    .intro p { font-size: 15.5px; }
+    .intro-side { padding: 14px 15px; }
+
+    .plan-frame { padding: 4px; border-radius: 12px; }
+
+    .detail-head { gap: 12px; }
+    .detail-icon { width: 46px; height: 46px; flex-basis: 46px; border-radius: 13px; }
+    .detail-icon svg { width: 25px; height: 25px; }
+    .detail-head h2 { font-size: 22px; }
+    .detail-text { font-size: 16px; }
+
+    .question { font-size: 17px; }
+    .answer { padding: 15px 14px; min-height: 56px; }
+
+    .btn-row .btn { flex: 1 1 auto; justify-content: center; }
+
+    .legend { font-size: 12.5px; gap: 4px 14px; }
+}
+
+/* Der Grundriss trägt auf dem Telefon die Navigation – die Liste
+   ist dort nur noch eine zusätzliche Abkürzung. Am Desktop entfällt
+   sie ganz. */
+@media (min-width: 760px) {
+    .room-box { display: none; }
+}
+
+@media (min-width: 700px) {
+    .online-links { grid-template-columns: repeat(3, 1fr); }
+    .wrap { padding: 30px 22px 80px; }
+    .sheet { padding: 30px; }
+    .intro h1 { font-size: 46px; }
+    .facts { grid-template-columns: 1fr 1fr; }
+    .timeline { grid-template-columns: 1fr 1fr; }
+    .compass { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 860px) {
+    /* Treppe: jede Stufe rückt ein Stück ein. Auf schmalen
+       Bildschirmen bleibt die Liste bündig, sonst wird der Text zu eng. */
+    .norm-stufe:nth-child(2) { margin-left: 18px; }
+    .norm-stufe:nth-child(3) { margin-left: 36px; }
+    .norm-stufe:nth-child(4) { margin-left: 54px; }
+    .norm-stufe:nth-child(5) { margin-left: 72px; }
+    .norm-stufe:nth-child(6) { margin-left: 90px; }
+}
+
+@media (min-width: 1000px) {
+    .timeline { grid-template-columns: repeat(4, 1fr); }
+    .facts { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+    .intro-grid { display: grid; grid-template-columns: 1.45fr 1fr; gap: 34px; align-items: end; }
+    .intro-side { margin-top: 0; }
+    .intro h1 { font-size: 52px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .slot.is-filled,
+    .plan-room.is-done .plan-stamp-in { animation: none; }
+    .plan-room,
+    .plan-marker,
+    .answer { transition: none; }
+    .plan-room:hover, .plan-room:focus-visible { transform: none; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== Symbolbibliothek ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+        <!-- ============================================================
+             PLATZ FÜR DAS OFFIZIELLE BA-SIGNET
+
+             Das Signet ist eine geschützte Bildmarke und wird hier
+             bewusst NICHT nachgezeichnet. Wenn die Verwendung mit
+             zentrale.cd@arbeitsagentur.de abgestimmt ist:
+
+             1. Offizielle SVG-Datei aus dem CD-Portal öffnen,
+             2. deren <path>-Elemente hier hineinkopieren und die
+                viewBox unten an die Originaldatei anpassen,
+             3. im Skript NUTZE_SIGNET auf true setzen.
+
+             Das Signet erscheint dann in der Mitte des Stempels
+             anstelle des Hakens. Beachte, dass das Handbuch
+             Erscheinungsbild das Drehen und Verfremden der Marke
+             untersagt – für eine CD-konforme Variante die Zeile
+             rotate(-8) in raumMarkup() entfernen.
+             ============================================================ -->
+        <symbol id="ba-signet" viewBox="0 0 100 100"></symbol>
+
+        <symbol id="ico-tuer" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17" />
+            <path d="M3 21h18" />
+            <circle cx="13" cy="12.5" r="1" />
+        </symbol>
+
+        <symbol id="ico-kompass" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M15.8 8.2l-2.1 5.5-5.5 2.1 2.1-5.5z" />
+        </symbol>
+
+        <symbol id="ico-beratung" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3.5 2.5 8.2 12 12.9l9.5-4.7z" />
+            <path d="M6.5 10.8v4.4c0 1.7 2.5 3 5.5 3s5.5-1.3 5.5-3v-4.4" />
+            <path d="M21.5 8.2v5.3" />
+        </symbol>
+
+        <symbol id="ico-betrieb" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21V4.5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1V21" />
+            <path d="M13 10h7a1 1 0 0 1 1 1v10" />
+            <path d="M2 21h20" />
+            <path d="M6.5 7.5h3M6.5 11.5h3M6.5 15.5h3M16.5 14h1.5M16.5 17.5h1.5" />
+        </symbol>
+
+        <symbol id="ico-dokument" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2.8H7a1.8 1.8 0 0 0-1.8 1.8v14.8A1.8 1.8 0 0 0 7 21.2h10a1.8 1.8 0 0 0 1.8-1.8V7.6z" />
+            <path d="M14 2.8v4.8h4.8" />
+            <path d="M8.5 12.5h7M8.5 16h5" />
+        </symbol>
+
+        <symbol id="ico-familie" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="7.5" r="2.6" />
+            <path d="M3.5 20v-2c0-2.2 2-4 4.5-4s4.5 1.8 4.5 4v2" />
+            <circle cx="17" cy="11.5" r="2" />
+            <path d="M13.8 20v-1.4c0-1.7 1.4-3.1 3.2-3.1s3.2 1.4 3.2 3.1V20" />
+        </symbol>
+
+        <symbol id="ico-schirm" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.5 12a9.5 9.5 0 0 1 19 0z" />
+            <path d="M12 12v6.5a2.2 2.2 0 0 0 4.4 0" />
+            <path d="M12 2.5V4" />
+        </symbol>
+
+        <symbol id="ico-headset" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 14v-2a8 8 0 0 1 16 0v2" />
+            <rect x="2.5" y="13.5" width="4.5" height="6.5" rx="1.8" />
+            <rect x="17" y="13.5" width="4.5" height="6.5" rx="1.8" />
+            <path d="M19 20v.5a2.5 2.5 0 0 1-2.5 2.5H13" />
+        </symbol>
+
+        <symbol id="ico-leitung" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="8.5" y="2.5" width="7" height="5.5" rx="1.4" />
+            <rect x="2.5" y="15.5" width="6.5" height="5.5" rx="1.4" />
+            <rect x="15" y="15.5" width="6.5" height="5.5" rx="1.4" />
+            <path d="M12 8v3.5M5.75 15.5v-2.2h12.5v2.2M12 11.5v1.8" />
+        </symbol>
+
+        <symbol id="ico-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2.5" y="3.5" width="19" height="13" rx="2" />
+            <path d="M9 20.5h6M12 16.5v4" />
+            <path d="M7 9.5l2.5 2L7 14" />
+            <path d="M12.5 14H17" />
+        </symbol>
+
+        <symbol id="ico-zahnrad" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3.2" />
+            <circle cx="12" cy="12" r="7.6" />
+            <path d="M12 2.5v1.9M12 19.6v1.9M2.5 12h1.9M19.6 12h1.9M5.3 5.3l1.3 1.3M17.4 17.4l1.3 1.3M18.7 5.3l-1.3 1.3M6.6 17.4l-1.3 1.3" />
+        </symbol>
+    </defs>
+</svg>
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="brand">
+            <div class="brand-mark" aria-hidden="true">BA</div>
+            <div>
+                <div class="brand-title">Der Laufzettel</div>
+                <div class="brand-sub">Rundgang durch die Dienststelle</div>
+            </div>
+        </div>
+
+        <div class="stampcard" id="progressBar" role="progressbar"
+             aria-valuemin="0" aria-valuemax="10" aria-valuenow="0"
+             aria-valuetext="0 von 10 Stempeln gesammelt">
+            <span class="stampcard-label" id="trackerCount">0 / 10 Stempel</span>
+            <div class="slots" id="slots" aria-hidden="true"></div>
+        </div>
+    </div>
+</header>
+
+<div class="wrap">
+
+    <!-- ===== Einstieg ===== -->
+    <section class="intro" id="start">
+        <div class="intro-grid">
+            <div>
+                <p class="eyebrow">Erdgeschoss · zehn Räume</p>
+                <h1>Zehn Türen.<br /><em>Zehn Stempel.</em></h1>
+                <p>
+                    Jeder Raum im Grundriss ist ein Bereich der Bundesagentur für Arbeit.
+                    Geh hinein, sieh dir an, wer dort arbeitet und nach welchem Gesetz –
+                    und beantworte die Frage zum Raum. Richtige Antwort, Stempel auf den
+                    Laufzettel.
+                </p>
+                <p>
+                    Falsche Antworten kosten nichts. Du kannst sofort weiterprobieren,
+                    und dein Fortschritt bleibt in diesem Browser gespeichert – auf
+                    deinem Gerät, nicht auf einem Server.
+                </p>
+                <div class="btn-row">
+                    <a class="btn" href="#grundriss">Rundgang starten</a>
+                    <button type="button" class="btn btn-quiet" id="resetButton">
+                        Laufzettel leeren
+                    </button>
+                </div>
+            </div>
+
+            <div class="intro-side">
+                <p class="eyebrow" style="color:#8fa6bd">Die Farben im Grundriss</p>
+                <p>
+                    Drei Rechtskreise laufen in diesem Haus nebeneinander her, dazu
+                    Zugang, Innenbetrieb und Leitung. Die Raumfarbe verrät dir, wo
+                    du gerade stehst:
+                </p>
+                <p style="margin-top:12px">
+                    <span class="rule-chip chip-blau">SGB III</span>
+                    <span class="rule-chip chip-gruen">SGB II</span>
+                    <span class="rule-chip chip-violett">EStG / BKGG</span>
+                    <span class="rule-chip chip-bernstein">Zugang</span>
+                    <span class="rule-chip chip-leitung">Leitung</span>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Grundriss ===== -->
+    <section class="sheet" id="grundriss">
+        <div class="sheet-head">
+            <div>
+                <p class="eyebrow">Grundriss</p>
+                <h2>Wohin gehst du zuerst?</h2>
+            </div>
+            <p class="eyebrow">Klick oder Enter öffnet die Tür</p>
+        </div>
+
+        <p class="restored" id="restoredNote" hidden>
+            Willkommen zurück – dein Laufzettel vom letzten Besuch ist noch da.
+        </p>
+
+        <div class="plan-frame">
+            <svg class="plan plan-quer" id="plan" viewBox="0 0 1000 560"
+                 xmlns="http://www.w3.org/2000/svg"
+                 xmlns:xlink="http://www.w3.org/1999/xlink"
+                 role="group" aria-label="Grundriss der Dienststelle mit zehn Räumen">
+
+                <defs>
+                    <pattern id="raster" width="22" height="22" patternUnits="userSpaceOnUse">
+                        <circle cx="1.5" cy="1.5" r="1.5" fill="#dde7ef" />
+                    </pattern>
+                    <pattern id="rasterKlein" width="10" height="10" patternUnits="userSpaceOnUse">
+                        <circle cx="1" cy="1" r=".9" fill="#dde7ef" />
+                    </pattern>
+                </defs>
+
+                <g id="planBase"></g>
+                <g id="planRooms"></g>
+                <g id="planTop"></g>
+
+                <g class="plan-marker" id="planMarker">
+                    <ellipse cx="0" cy="18" rx="15" ry="4" fill="#14263f" opacity=".12" />
+                    <circle cx="0" cy="0" r="16" fill="#ffb648" stroke="#14263f" stroke-width="2.5" />
+                    <text x="0" y="4.5" text-anchor="middle" class="plan-num"
+                          fill="#14263f" font-weight="700">DU</text>
+                </g>
+            </svg>
+        </div>
+
+        <div class="legend" aria-hidden="true">
+            <span><i style="background:#1a7fd4"></i>SGB III · Arbeitsförderung</span>
+            <span><i style="background:#0f7a63"></i>SGB II · Grundsicherung</span>
+            <span><i style="background:#7048c0"></i>EStG / BKGG · Familienleistungen</span>
+            <span><i style="background:#c46a08"></i>Zugang und Innenbetrieb</span>
+            <span><i style="background:#2f4a68"></i>Leitung</span>
+        </div>
+
+        <details class="room-box">
+            <summary>Alle Räume als Liste</summary>
+            <div class="room-list" id="roomList"></div>
+        </details>
+    </section>
+
+    <!-- ===== Detailkarte ===== -->
+    <section class="sheet acc-blau" id="detail" hidden>
+        <div class="detail-stripe" aria-hidden="true"></div>
+
+        <div class="detail-head">
+            <div class="detail-icon" aria-hidden="true">
+                <svg id="detailIcon" viewBox="0 0 24 24"><use href="#ico-tuer" xlink:href="#ico-tuer" /></svg>
+            </div>
+            <div>
+                <p class="eyebrow" id="detailNum">Raum</p>
+                <h2 id="detailTitle" tabindex="-1">Raumtitel</h2>
+                <span class="tag" id="detailTag">Kennzeichnung</span>
+            </div>
+        </div>
+
+        <p class="detail-text" id="detailText"></p>
+
+        <div class="facts" id="detailFacts"></div>
+
+        <div class="note">
+            <span class="note-mark" aria-hidden="true">!</span>
+            <span>
+                <strong>Schon gewusst</strong>
+                <span id="detailNote"></span>
+            </span>
+        </div>
+
+        <div class="quiz">
+            <p class="eyebrow">Aufgabe zu diesem Raum</p>
+            <p class="question" id="quizQuestion"></p>
+            <div class="answers" id="quizAnswers"></div>
+            <p class="feedback" id="quizFeedback" role="status"></p>
+            <div class="next-wrap" id="nextWrap"></div>
+        </div>
+
+        <div class="intranet" id="intranetBox" hidden>
+            <strong>Mehr dazu im Intranet</strong>
+            <p style="margin:4px 0 12px; font-size:14.5px; color:#5c7186;">
+                Vertiefende Informationen zu diesem Bereich.
+            </p>
+            <a class="btn btn-light" id="intranetLink" href="#" target="_blank" rel="noopener">Seite öffnen</a>
+        </div>
+    </section>
+
+    <!-- ===== Online-Zugang ===== -->
+    <section class="sheet" id="online">
+        <div class="sheet-head">
+            <div>
+                <p class="eyebrow">Zugang ohne Tür</p>
+                <h2>Das Haus ist auch online offen</h2>
+            </div>
+            <span class="online-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><use href="#ico-monitor" xlink:href="#ico-monitor" /></svg>
+            </span>
+        </div>
+
+        <p style="max-width:68ch; margin-top:0">
+            eServices und jobcenter.digital sind keine eigene Abteilung, sondern
+            ein weiterer Weg in dieselben Räume: Ein Antrag, der online gestellt
+            wird, landet in genau dem Fachbereich, den du im Grundriss anklickst.
+            Wer anruft, landet im Service Center – und von dort ebenfalls dort,
+            wo sein Anliegen hingehört.
+        </p>
+
+        <div class="online-links">
+            <a class="btn btn-light" href="https://www.arbeitsagentur.de/eservices"
+               target="_blank" rel="noopener">eServices für Privatpersonen</a>
+            <a class="btn btn-light" href="https://www.arbeitsagentur.de/eservices-unternehmen"
+               target="_blank" rel="noopener">eServices für Unternehmen</a>
+            <a class="btn btn-light"
+               href="https://www.arbeitsagentur.de/arbeitslos-arbeit-finden/buergergeld/online-services-im-ueberblick"
+               target="_blank" rel="noopener">Online-Services der Jobcenter</a>
+        </div>
+    </section>
+
+    <!-- ===== Abschluss ===== -->
+    <section class="sheet finish" id="finish">
+        <div class="detail-stripe" aria-hidden="true"></div>
+        <p class="eyebrow">Laufzettel voll</p>
+        <h2>Zehn von zehn Stempeln.</h2>
+        <p style="max-width:68ch">
+            Du kennst jetzt jeden Raum des Hauses und weißt, nach welchem Recht er
+            arbeitet. Das Wichtigste noch einmal nebeneinander:
+        </p>
+
+        <div class="compass">
+            <div class="c-blau">
+                <b>SGB III</b>
+                <span>Arbeitsförderung</span>
+                <small>Beitragsfinanziert. Vermittlung, Beratung, Arbeitslosengeld,
+                Leistungen an Arbeitgeber.</small>
+            </div>
+            <div class="c-gruen">
+                <b>SGB II</b>
+                <span>Grundsicherung für Arbeitsuchende</span>
+                <small>Steuerfinanziert. Grundsicherungsgeld und Eingliederung,
+                umgesetzt im Jobcenter.</small>
+            </div>
+            <div class="c-violett">
+                <b>EStG / BKGG</b>
+                <span>Familienleistungsausgleich</span>
+                <small>Steuerrecht. Kindergeld und Kinderzuschlag,
+                umgesetzt in der Familienkasse.</small>
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <a class="btn" href="#start">Zurück zum Anfang</a>
+        </div>
+    </section>
+
+    <!-- ===== Normenhierarchie ===== -->
+    <section class="sheet" id="normen">
+        <div class="sheet-head">
+            <div>
+                <p class="eyebrow">Hintergrund</p>
+                <h2>Woher die Regel kommt, nach der entschieden wird</h2>
+            </div>
+        </div>
+
+        <p style="max-width:68ch; margin-top:0">
+            In jedem Raum wird entschieden – aber nicht jede Regel, die dort gilt,
+            ist ein Gesetz. Von oben nach unten wird es konkreter, und genau in
+            der Mitte verläuft die wichtigste Grenze dieser Treppe.
+        </p>
+
+        <ol class="norm-stufen">
+            <li class="norm-stufe n-aussen">
+                <div>
+                    <b>Grundgesetz</b>
+                    <span class="norm-badge">wirkt nach außen</span>
+                    <p>Bindet jede staatliche Stelle. Für die Verwaltung besonders
+                    wichtig: die Bindung an Gesetz und Recht (Art. 20 Abs. 3 GG)
+                    und die Gleichbehandlung (Art. 3 GG).</p>
+                </div>
+            </li>
+            <li class="norm-stufe n-aussen">
+                <div>
+                    <b>Gesetz</b>
+                    <span class="norm-badge">wirkt nach außen</span>
+                    <p>SGB I, II, III und X, dazu EStG und BKGG. Beschlossen vom
+                    Bundestag. Nur hier entstehen Ansprüche und Pflichten der
+                    Bürgerinnen und Bürger.</p>
+                </div>
+            </li>
+            <li class="norm-stufe n-aussen">
+                <div>
+                    <b>Rechtsverordnung</b>
+                    <span class="norm-badge">wirkt nach außen</span>
+                    <p>Erlassen von Regierung oder Ministerium, aber nur so weit,
+                    wie ein Gesetz dazu ermächtigt (Art. 80 GG).</p>
+                </div>
+            </li>
+            <li class="norm-stufe n-aussen">
+                <div>
+                    <b>Satzung und Anordnungen der BA</b>
+                    <span class="norm-badge">wirkt nach außen</span>
+                    <p>Als Körperschaft mit Selbstverwaltung setzt die BA in
+                    bestimmten Bereichen eigenes Recht; beschlossen wird es vom
+                    Verwaltungsrat.</p>
+                </div>
+            </li>
+            <li class="norm-stufe n-intern">
+                <div>
+                    <b>Fachliche Weisungen und Geschäftsanweisungen</b>
+                    <span class="norm-badge">wirkt nur im Haus</span>
+                    <p>Sie legen fest, wie das Haus das Gesetz anwendet, und sind
+                    für die Beschäftigten verbindlich. Für Kundinnen und Kunden
+                    und für die Gerichte sind sie es nicht.</p>
+                </div>
+            </li>
+            <li class="norm-stufe n-fall">
+                <div>
+                    <b>Entscheidung im Einzelfall</b>
+                    <span class="norm-badge">der konkrete Fall</span>
+                    <p>Der Verwaltungsakt nach § 31 SGB X: begründet,
+                    bekanntgegeben und mit Widerspruch angreifbar.</p>
+                </div>
+            </li>
+        </ol>
+
+        <div class="note">
+            <span class="note-mark" aria-hidden="true">!</span>
+            <span>
+                <strong>Warum das im Widerspruch zählt</strong>
+                Trägt das Gesetz eine Entscheidung nicht, rettet sie auch die
+                Weisung nicht – geprüft wird am Gesetz. Umgekehrt bindet eine
+                ermessenslenkende Weisung die Verwaltung über die Gleichbehandlung
+                an ihre eigene Praxis: Wer davon abweicht, braucht dafür einen
+                sachlichen Grund im Einzelfall.
+            </span>
+        </div>
+    </section>
+
+    <!-- ===== Zeitstrahl ===== -->
+    <section class="sheet">
+        <div class="sheet-head">
+            <div>
+                <p class="eyebrow">Hintergrund</p>
+                <h2>Wie das Haus entstanden ist</h2>
+            </div>
+        </div>
+
+        <div class="timeline">
+            <div class="event">
+                <div class="event-year">1927</div>
+                <b>Reichsanstalt für Arbeitsvermittlung und Arbeitslosenversicherung</b>
+                <p>Das AVAVG bringt die erste reichsweite Arbeitslosenversicherung.</p>
+            </div>
+            <div class="event">
+                <div class="event-year">1952</div>
+                <b>Bundesanstalt für Arbeitsvermittlung und Arbeitslosenversicherung</b>
+                <p>Neuaufbau der Arbeitsverwaltung in der Bundesrepublik.</p>
+            </div>
+            <div class="event">
+                <div class="event-year">1969</div>
+                <b>Arbeitsförderungsgesetz</b>
+                <p>Aus der Bundesanstalt wird die „Bundesanstalt für Arbeit“.</p>
+            </div>
+            <div class="event">
+                <div class="event-year">1998</div>
+                <b>SGB III löst das AFG ab</b>
+                <p>Die Arbeitsförderung wird Teil des Sozialgesetzbuchs.</p>
+            </div>
+            <div class="event">
+                <div class="event-year">2004</div>
+                <b>Bundesagentur für Arbeit</b>
+                <p>Umbenennung und Umbau der Organisation.</p>
+            </div>
+            <div class="event">
+                <div class="event-year">2005</div>
+                <b>SGB II und Jobcenter</b>
+                <p>Arbeitslosenhilfe und Sozialhilfe gehen in der Grundsicherung auf.</p>
+            </div>
+            <div class="event">
+                <div class="event-year">2023</div>
+                <b>Bürgergeld</b>
+                <p>Das Bürgergeld ersetzt das Arbeitslosengeld II.</p>
+            </div>
+            <div class="event">
+                <div class="event-year">2026</div>
+                <b>Grundsicherungsgeld</b>
+                <p>Zum 1. Juli 2026 wird die Grundsicherung umgestaltet und umbenannt.</p>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    /* ============================================================
+       INHALTE
+       Ein Objekt je Raum. x/y/w/h bestimmen die Lage im Grundriss,
+       "reihe" steuert, auf welcher Seite die Tür sitzt.
+
+       INTRANET-LINKS: Feld "link" leer lassen = Kasten bleibt
+       ausgeblendet. Sobald eine Adresse eingetragen ist, erscheint
+       der Kasten automatisch. Beispiel:
+       link: "/sites/Azubi/SitePages/Arbeitsvermittlung.aspx"
+       ============================================================ */
+
+    var W = 224, HO = 200;
+    var SPALTE = [40, 272, 504, 736];
+
+var raeume = [
+        {
+            id: "eingangszone",
+            nr: "E.01",
+            icon: "ico-tuer",
+            titel: "Eingangszone",
+            kurz: "Empfang und Orientierung",
+            tag: "Erster Kontakt",
+            reihe: "oben",
+            x: SPALTE[0], y: 40, w: W, h: HO,
+            text: "Hier entscheidet sich, ob ein Anliegen an der richtigen Stelle landet. Die Eingangszone klärt das Anliegen, prüft die Zuständigkeit und leitet weiter – an die Vermittlung, an den Operativen Service oder an einen anderen Träger.",
+            fakten: [
+                ["Rechtsgrundlage", "§§ 13–17 SGB I"],
+                ["Aufgabe", "Anliegen klären, Zuständigkeit prüfen"],
+                ["Schnittstelle", "Alle Bereiche des Hauses"],
+                ["Zielgruppe", "Alle, die das Haus betreten"]
+            ],
+            notiz: "§ 16 Abs. 2 SGB I ist eine wichtige Norm dieses Raums: Ein Antrag, der beim unzuständigen Leistungsträger eingeht, wird unverzüglich weitergeleitet – und gilt weiter als zum ersten Eingangstag gestellt. Für die Kundin oder den Kunden geht also kein Tag verloren.",
+            frage: "Jemand stellt einen Antrag bei einem Leistungsträger, der dafür nicht zuständig ist. Was passiert?",
+            antworten: [
+                "Der Antrag ist unwirksam und muss beim zuständigen Träger neu gestellt werden.",
+                "Der Antrag wird unverzüglich weitergeleitet und gilt weiter ab dem ersten Eingang als gestellt.",
+                "Der Antrag bleibt liegen, bis die zuständige Stelle ihn anfordert."
+            ],
+            richtig: 1,
+            hinweise: [
+                "Das wäre riskant für Antragstellende – genau davor schützt § 16 SGB I.",
+                "",
+                "Es gibt keine Bringschuld der zuständigen Stelle. Die Weiterleitung ist Pflicht des angegangenen Trägers."
+            ],
+            loesung: "Richtig. § 16 Abs. 2 SGB I: unverzüglich weiterleiten, der Eingangstag bleibt erhalten.",
+            link: ""
+        },
+        {
+            id: "service-center",
+            nr: "E.02",
+            icon: "ico-headset",
+            titel: "Service Center",
+            kurz: "Telefonischer Zugang",
+            tag: "Erster Kontakt",
+            reihe: "oben",
+            x: 0, y: 0, w: 0, h: 0,
+            text: "Das Service Center nimmt Anrufe entgegen, klärt einfache Anliegen sofort und gibt alles Weitere an die Fachbereiche. Für viele Menschen ist es der erste Kontakt zur Agentur – ohne dass sie das Haus je betreten.",
+            fakten: [
+                ["Rechtsgrundlage", "§§ 14, 15 SGB I"],
+                ["Zugang", "Telefon, bundesweit einheitliche Nummern"],
+                ["Aufgabe", "Auskunft, Termine, Weiterleitung"],
+                ["Schnittstelle", "Alle Fachbereiche des Hauses"]
+            ],
+            notiz: "Der telefonische Weg ist rechtlich kein Sonderfall: Auskunft und Beratung nach §§ 14 und 15 SGB I schuldet der Träger unabhängig davon, ob jemand persönlich kommt, anruft oder online schreibt.",
+            frage: "Wozu dient das Service Center in erster Linie?",
+            antworten: [
+                "Es entscheidet abschließend über Anträge auf Arbeitslosengeld.",
+                "Es klärt Anliegen am Telefon und leitet weiter, was in die Fachbereiche gehört.",
+                "Es betreut ausschließlich Arbeitgeber."
+            ],
+            richtig: 1,
+            hinweise: [
+                "Über Geldleistungen entscheidet der Operative Service.",
+                "",
+                "Für Betriebe gibt es den Arbeitgeber-Service – das Service Center ist für alle da."
+            ],
+            loesung: "Richtig. Das Service Center ist der telefonische Zugang zum Haus: klären, was sich sofort klären lässt, und den Rest gezielt weitergeben.",
+            link: ""
+        },
+        {
+            id: "arbeitsvermittlung",
+            nr: "E.03",
+            icon: "ico-kompass",
+            titel: "Arbeitsvermittlung",
+            kurz: "Beratung und Vermittlung",
+            tag: "SGB III",
+            reihe: "oben",
+            x: SPALTE[1], y: 40, w: W, h: HO,
+            text: "Die Arbeitsvermittlung berät Arbeitsuchende und schlägt ihnen passende Stellen vor. Sie arbeitet eng mit dem Arbeitgeber-Service zusammen: Der eine Raum kennt die Menschen, der andere die freien Stellen.",
+            fakten: [
+                ["Rechtsgrundlage", "§ 35 SGB III"],
+                ["Zielgruppe", "Arbeitsuchende im SGB III"],
+                ["Ziel", "Integration in Arbeit oder Ausbildung"],
+                ["Schnittstelle", "Arbeitgeber-Service, Operativer Service"]
+            ],
+            notiz: "Vermittlung setzt keinen Leistungsbezug voraus. Auch wer noch beschäftigt ist und sich arbeitsuchend meldet, hat Anspruch auf Vermittlung und Beratung.",
+            frage: "Wer wird in der Arbeitsvermittlung der Agentur für Arbeit betreut?",
+            antworten: [
+                "Ausschließlich Menschen, die Grundsicherungsgeld beziehen",
+                "Arbeitsuchende im Rechtskreis SGB III – mit oder ohne Leistungsbezug",
+                "Nur Menschen, die bereits Arbeitslosengeld beziehen"
+            ],
+            richtig: 1,
+            hinweise: [
+                "Für sie ist das Jobcenter zuständig, nicht die Arbeitsvermittlung der Agentur.",
+                "",
+                "Der Anspruch auf Vermittlung hängt nicht am Leistungsbezug."
+            ],
+            loesung: "Richtig. Der Vermittlungsauftrag nach § 35 SGB III gilt unabhängig davon, ob Geldleistungen bezogen werden.",
+            link: ""
+        },
+        {
+            id: "berufsberatung",
+            nr: "E.04",
+            icon: "ico-beratung",
+            titel: "Berufsberatung",
+            kurz: "Orientierung und BiZ",
+            tag: "SGB III",
+            reihe: "oben",
+            x: SPALTE[2], y: 40, w: W, h: HO,
+            text: "Die Berufsberatung begleitet junge Menschen bei der Berufswahl und Erwachsene bei der beruflichen Neuorientierung. Im Berufsinformationszentrum kann man sich auch ohne Termin informieren.",
+            fakten: [
+                ["Rechtsgrundlage", "§§ 29 ff. SGB III"],
+                ["Zielgruppe", "Junge Menschen und Erwachsene"],
+                ["Kosten", "Kostenfrei, ohne Leistungsbezug"],
+                ["Schnittstelle", "Schulen, Betriebe, Vermittlung"]
+            ],
+            notiz: "Die Berufsberatung erreicht Menschen lange bevor sie überhaupt Leistungen beantragen könnten. Sie ist gesetzlicher Auftrag, keine freiwillige Zusatzleistung.",
+            frage: "Wer darf die Berufsberatung nutzen?",
+            antworten: [
+                "Nur wer Arbeitslosengeld oder Grundsicherungsgeld bezieht",
+                "Nur Schülerinnen und Schüler in Abschlussklassen",
+                "Alle Interessierten, unabhängig von Alter und Leistungsbezug"
+            ],
+            richtig: 2,
+            hinweise: [
+                "Beratung ist an keinen Leistungsbezug gebunden.",
+                "Auch Erwachsene in beruflicher Neuorientierung gehören zur Zielgruppe.",
+                ""
+            ],
+            loesung: "Richtig. Berufsberatung nach §§ 29 ff. SGB III steht allen offen und ist kostenfrei.",
+            link: ""
+        },
+        {
+            id: "arbeitgeber-service",
+            nr: "E.05",
+            icon: "ico-betrieb",
+            titel: "Arbeitgeber-Service",
+            kurz: "Die Sicht der Betriebe",
+            tag: "SGB III",
+            reihe: "oben",
+            x: SPALTE[3], y: 40, w: W, h: HO,
+            text: "Der Arbeitgeber-Service ist der feste Ansprechpartner für Betriebe: Er nimmt Stellenangebote auf, schlägt Bewerberinnen und Bewerber vor und berät zu Förderungen bei Einstellungen.",
+            fakten: [
+                ["Rechtsgrundlage", "§ 35 SGB III"],
+                ["Kundschaft", "Betriebe und Verwaltungen"],
+                ["Typische Förderung", "Eingliederungszuschuss, §§ 88 ff. SGB III"],
+                ["Schnittstelle", "Arbeitsvermittlung, Jobcenter"]
+            ],
+            notiz: "Ohne gemeldete Stellen keine Vermittlung: Der Arbeitgeber-Service pflegt den Stellenbestand, aus dem die Vermittlung schöpft. Beide Seiten des Arbeitsmarkts sind organisatorisch getrennt, arbeiten aber am selben Fall.",
+            frage: "Welche Leistung richtet sich an Arbeitgeber?",
+            antworten: [
+                "Eingliederungszuschuss",
+                "Berufsausbildungsbeihilfe",
+                "Grundsicherungsgeld"
+            ],
+            richtig: 0,
+            hinweise: [
+                "",
+                "Die Berufsausbildungsbeihilfe unterstützt Auszubildende selbst, nicht den Betrieb.",
+                "Das ist eine Leistung an Leistungsberechtigte im SGB II."
+            ],
+            loesung: "Richtig. Der Eingliederungszuschuss nach §§ 88 ff. SGB III geht an den Betrieb, wenn er jemanden mit erschwerter Vermittlung einstellt.",
+            link: ""
+        },
+        {
+            id: "operativer-service",
+            nr: "E.06",
+            icon: "ico-dokument",
+            titel: "Operativer Service",
+            kurz: "Arbeitslosengeld",
+            tag: "SGB III",
+            reihe: "unten",
+            x: SPALTE[0], y: 320, w: W, h: HO,
+            text: "Im Operativen Service werden Geldleistungen bearbeitet, vor allem das Arbeitslosengeld. Geprüft wird, ob die Anspruchsvoraussetzungen vorliegen, wie hoch die Leistung ausfällt und wie lange sie gezahlt wird.",
+            fakten: [
+                ["Rechtsgrundlage", "§§ 136 ff. SGB III"],
+                ["Kernprüfung", "Arbeitslosigkeit, Meldung, Anwartschaft"],
+                ["Anwartschaftszeit", "12 Monate in 30 Monaten Rahmenfrist"],
+                ["Finanzierung", "Beiträge zur Arbeitslosenversicherung"]
+            ],
+            notiz: "Das Arbeitslosengeld ist eine Versicherungsleistung aus Beiträgen. Die Leistungen nach dem SGB II kommen dagegen aus Steuermitteln – der wichtigste Unterschied zwischen den beiden Rechtskreisen.",
+            frage: "Wie lange muss man im Regelfall versicherungspflichtig beschäftigt gewesen sein, um Arbeitslosengeld zu erhalten?",
+            antworten: [
+                "6 Monate innerhalb der letzten 12 Monate",
+                "12 Monate innerhalb der Rahmenfrist von 30 Monaten",
+                "24 Monate innerhalb der letzten 36 Monate"
+            ],
+            richtig: 1,
+            hinweise: [
+                "Diese Frist gibt es im Arbeitslosengeld nicht.",
+                "",
+                "Die Anwartschaftszeit ist deutlich kürzer."
+            ],
+            loesung: "Richtig. § 142 SGB III verlangt zwölf Monate Versicherungspflichtverhältnis; die Rahmenfrist von 30 Monaten steht in § 143 SGB III.",
+            link: ""
+        },
+        {
+            id: "familienkasse",
+            nr: "E.07",
+            icon: "ico-familie",
+            titel: "Familienkasse",
+            kurz: "Kindergeld, Kinderzuschlag",
+            tag: "EStG / BKGG",
+            reihe: "unten",
+            x: SPALTE[1], y: 320, w: W, h: HO,
+            text: "Die Familienkasse gehört zur Bundesagentur, arbeitet aber nach anderen Gesetzen als die übrigen Räume: Das Kindergeld ist im Steuerrecht geregelt, nicht im Sozialgesetzbuch.",
+            fakten: [
+                ["Rechtsgrundlage", "§§ 62 ff. EStG, BKGG"],
+                ["Leistungen", "Kindergeld, Kinderzuschlag (§ 6a BKGG)"],
+                ["Kindergeld 2026", "259 € je Kind und Monat"],
+                ["Nicht zuständig für", "Elterngeld und Wohngeld"]
+            ],
+            notiz: "Kindergeld ist keine Sozialleistung nach dem SGB, sondern dient der steuerlichen Freistellung des Existenzminimums eines Kindes. Deshalb steht es im Einkommensteuergesetz.",
+            frage: "Welche dieser Leistungen erbringt die Familienkasse?",
+            antworten: [
+                "Elterngeld",
+                "Wohngeld",
+                "Kinderzuschlag"
+            ],
+            richtig: 2,
+            hinweise: [
+                "Elterngeld beantragt man bei den Elterngeldstellen der Länder.",
+                "Wohngeld bearbeiten die kommunalen Wohngeldstellen.",
+                ""
+            ],
+            loesung: "Richtig. Der Kinderzuschlag nach § 6a BKGG ergänzt das Kindergeld für Familien mit kleinem Einkommen.",
+            link: ""
+        },
+        {
+            id: "jobcenter",
+            nr: "E.08",
+            icon: "ico-schirm",
+            titel: "Jobcenter",
+            kurz: "Grundsicherung",
+            tag: "SGB II",
+            reihe: "unten",
+            x: SPALTE[2], y: 320, w: W, h: HO,
+            text: "Das Jobcenter sichert den Lebensunterhalt und unterstützt zugleich bei der Integration in Arbeit. Getragen wird es in der Regel gemeinsam von der Agentur für Arbeit und der Kommune.",
+            fakten: [
+                ["Rechtsgrundlage", "SGB II"],
+                ["Geldleistung", "Grundsicherungsgeld (seit 01.07.2026)"],
+                ["Trägerschaft", "Gemeinsame Einrichtung, § 44b SGB II"],
+                ["Unterkunftskosten", "Kommunaler Träger, § 6 Abs. 1 Nr. 2 SGB II"]
+            ],
+            notiz: "Im Jobcenter arbeiten zwei Träger unter einem Dach: Die Agentur für Arbeit verantwortet unter anderem Regelbedarf und Eingliederungsleistungen, die Kommune die Kosten für Unterkunft und Heizung sowie etwa die Schuldner- und Suchtberatung.",
+            frage: "Wie heißt die Geldleistung zur Sicherung des Lebensunterhalts im SGB II seit dem 1. Juli 2026?",
+            antworten: [
+                "Bürgergeld",
+                "Grundsicherungsgeld",
+                "Arbeitslosengeld II"
+            ],
+            richtig: 1,
+            hinweise: [
+                "So hieß die Leistung von 2023 bis zur Reform 2026.",
+                "",
+                "Diese Bezeichnung galt bis Ende 2022."
+            ],
+            loesung: "Richtig. Mit der Umgestaltung der Grundsicherung wurde das Bürgergeld zum 1. Juli 2026 in Grundsicherungsgeld umbenannt.",
+            link: ""
+        },
+        {
+            id: "interner-service",
+            nr: "E.09",
+            icon: "ico-zahnrad",
+            titel: "Interner Service & HR-Bereich",
+            kurz: "HR und IS",
+            tag: "HR",
+            reihe: "unten",
+            x: SPALTE[3], y: 320, w: W, h: HO,
+            text: "Der Interne Service hält den Betrieb am Laufen: Personalangelegenheiten, Haushalt, Beschaffung, Gebäude – und die Ausbildung, wegen der du gerade hier bist (organisiert im Produktcenter Nachwuchskräfte). Der Bereich verändert sich gerade: Er wird Schritt für Schritt zum HR-Bereich, in dem die Personalarbeit neu strukturiert wird.",
+            fakten: [
+                ["Rechtsgrundlage", "§ 367 SGB III"],
+                ["Aufgaben", "Personal, Haushalt, Infrastruktur, Ausbildung"],
+                ["Entwicklung", "Wird schrittweise zum HR-Bereich"],
+                ["Aufbau der BA", "Zentrale, Regionaldirektionen, Agenturen"],
+                ["Rechtsform", "Körperschaft des öffentlichen Rechts"]
+            ],
+            notiz: "Die BA ist keine Behörde im engeren Sinn, sondern eine Körperschaft des öffentlichen Rechts mit Selbstverwaltung. Ihr Verwaltungsrat ist zu gleichen Teilen mit Vertretungen der Arbeitnehmer, der Arbeitgeber und der öffentlichen Körperschaften besetzt.",
+            frage: "Wie ist die Bundesagentur für Arbeit organisatorisch aufgebaut?",
+            antworten: [
+                "Dreistufig: Zentrale, Regionaldirektionen, Agenturen für Arbeit",
+                "Zweistufig: Zentrale und Agenturen für Arbeit",
+                "Vierstufig: Ministerium, Zentrale, Landesämter, Agenturen"
+            ],
+            richtig: 0,
+            hinweise: [
+                "",
+                "Zwischen Zentrale und Agenturen stehen die Regionaldirektionen.",
+                "Das Bundesministerium führt die Rechtsaufsicht, ist aber keine Stufe im Aufbau der BA."
+            ],
+            loesung: "Richtig. Nach § 367 SGB III gliedert sich die BA in Zentrale, Regionaldirektionen und Agenturen für Arbeit.",
+            link: ""
+        },
+        {
+            id: "geschaeftsfuehrung",
+            nr: "E.10",
+            icon: "ico-leitung",
+            titel: "Geschäftsführung",
+            kurz: "Leitung der Agentur",
+            tag: "Leitung",
+            reihe: "unten",
+            x: 0, y: 0, w: 0, h: 0,
+            text: "Die Geschäftsführung leitet die Agentur für Arbeit: Sie setzt Ziele um, verantwortet Ergebnisse und vertritt das Haus nach außen. In den Einzelfall greift sie nicht ein – dort entscheidet die zuständige Fachkraft nach Recht und Gesetz.",
+            fakten: [
+                ["Rechtsgrundlage", "§ 383 SGB III"],
+                ["Besetzung", "Vorsitz und bis zu zwei weitere Mitglieder"],
+                ["Bestellung", "Durch den Vorstand der BA"],
+                ["Berichtet an", "Verwaltungsausschuss vor Ort"]
+            ],
+            notiz: "Die Geschäftsführung berichtet dem Verwaltungsausschuss, dem Selbstverwaltungsorgan der Agentur vor Ort. Er ist zu gleichen Teilen mit Arbeitnehmer-, Arbeitgeber- und öffentlicher Seite besetzt – genau das meint Selbstverwaltung.",
+            frage: "Wie ist die Geschäftsführung einer Agentur für Arbeit nach § 383 SGB III besetzt?",
+            antworten: [
+                "Aus einem Vorsitz und bis zu zwei weiteren Mitgliedern",
+                "Aus mindestens fünf Mitgliedern, die der Verwaltungsausschuss wählt",
+                "Aus je einer Vertretung der Arbeitnehmer, Arbeitgeber und öffentlichen Körperschaften"
+            ],
+            richtig: 0,
+            hinweise: [
+                "",
+                "Bestellt wird die Geschäftsführung vom Vorstand der BA, nicht vom Verwaltungsausschuss.",
+                "Das beschreibt den Verwaltungsausschuss als Selbstverwaltungsorgan, nicht die Geschäftsführung."
+            ],
+            loesung: "Richtig. § 383 Abs. 1 SGB III: Die Agenturen werden von einer Geschäftsführerin, einem Geschäftsführer oder einer Geschäftsführung aus Vorsitz und bis zu zwei weiteren Mitgliedern geleitet.",
+            link: ""
+        }
+    ];
+
+    /* ============================================================
+       FARBCODIERUNG nach Rechtskreis
+       ============================================================ */
+
+    var farben = {
+        "eingangszone": "bernstein",
+        "service-center": "bernstein",
+        "geschaeftsfuehrung": "leitung",
+        "arbeitsvermittlung": "blau",
+        "berufsberatung": "blau",
+        "arbeitgeber-service": "blau",
+        "operativer-service": "blau",
+        "familienkasse": "violett",
+        "jobcenter": "gruen",
+        "interner-service": "bernstein"
+    };
+
+    function farbeVon(id) {
+        return farben[id] ? farben[id] : "blau";
+    }
+
+    /* ============================================================
+       STEMPEL
+
+       NUTZE_SIGNET = false  -> Haken in der Stempelmitte (Standard)
+       NUTZE_SIGNET = true   -> offizielles BA-Signet aus dem Symbol
+                                "ba-signet" oben im Dokument
+
+       STEMPELFARBE: BA-Rot #e2001a. Derselbe Wert steht im
+       Stylesheet bei .slot.is-filled und .finish .detail-stripe.
+       ============================================================ */
+
+    var NUTZE_SIGNET = false;
+    var STEMPELFARBE = "#e2001a";
+
+    /* ============================================================
+       SPEICHERUNG
+       Der Fortschritt liegt ausschließlich im localStorage des
+       Browsers. Ist der Zugriff gesperrt (privater Modus, strenge
+       Richtlinien), läuft alles weiter – dann gilt der Laufzettel
+       nur für die laufende Sitzung.
+       ============================================================ */
+
+    var SPEICHER_SCHLUESSEL = "ba-onboarding-rundgang-v1";
+
+    var geloest = {};
+    var aktiv = null;
+    var buchstaben = ["A", "B", "C", "D"];
+
+    function speichereFortschritt() {
+        try {
+            window.localStorage.setItem(
+                SPEICHER_SCHLUESSEL, JSON.stringify(geloest));
+        } catch (e) {
+            /* bewusst ohne Meldung: Speichern ist eine Zugabe, keine Bedingung */
+        }
+    }
+
+    function loescheSpeicher() {
+        try {
+            window.localStorage.removeItem(SPEICHER_SCHLUESSEL);
+        } catch (e) {
+            /* siehe oben */
+        }
+    }
+
+    function ladeFortschritt() {
+        var roh = null;
+        var daten = null;
+        var gefunden = false;
+        var i, id;
+
+        try {
+            roh = window.localStorage.getItem(SPEICHER_SCHLUESSEL);
+        } catch (e) {
+            return false;
+        }
+
+        if (!roh) { return false; }
+
+        try {
+            daten = JSON.parse(roh);
+        } catch (e) {
+            loescheSpeicher();
+            return false;
+        }
+
+        if (!daten || typeof daten !== "object") { return false; }
+
+        /* Nur Räume übernehmen, die es heute noch gibt. So bleiben
+           alte Stände nach einer Inhaltsänderung unschädlich. */
+        for (i = 0; i < raeume.length; i++) {
+            id = raeume[i].id;
+            if (daten[id] === true) {
+                geloest[id] = true;
+                gefunden = true;
+            }
+        }
+
+        return gefunden;
+    }
+
+    /* ============================================================
+       ELEMENTE
+       ============================================================ */
+
+    var planRooms = document.getElementById("planRooms");
+    var planMarker = document.getElementById("planMarker");
+    var nextWrap = document.getElementById("nextWrap");
+    var roomList = document.getElementById("roomList");
+    var slots = document.getElementById("slots");
+    var trackerCount = document.getElementById("trackerCount");
+    var progressBar = document.getElementById("progressBar");
+    var detail = document.getElementById("detail");
+    var detailIcon = document.getElementById("detailIcon");
+    var detailNum = document.getElementById("detailNum");
+    var detailTitle = document.getElementById("detailTitle");
+    var detailTag = document.getElementById("detailTag");
+    var detailText = document.getElementById("detailText");
+    var detailFacts = document.getElementById("detailFacts");
+    var detailNote = document.getElementById("detailNote");
+    var quizQuestion = document.getElementById("quizQuestion");
+    var quizAnswers = document.getElementById("quizAnswers");
+    var quizFeedback = document.getElementById("quizFeedback");
+    var intranetBox = document.getElementById("intranetBox");
+    var intranetLink = document.getElementById("intranetLink");
+    var finish = document.getElementById("finish");
+    var restoredNote = document.getElementById("restoredNote");
+
+    function anzahlGeloest() {
+        var n = 0;
+        var i;
+        for (i = 0; i < raeume.length; i++) {
+            if (geloest[raeume[i].id]) { n++; }
+        }
+        return n;
+    }
+
+    function bewegungReduziert() {
+        return window.matchMedia &&
+            window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
+
+    function findeRaum(id) {
+        var i;
+        for (i = 0; i < raeume.length; i++) {
+            if (raeume[i].id === id) { return raeume[i]; }
+        }
+        return null;
+    }
+
+    /* ============================================================
+       GRUNDRISS
+       ============================================================ */
+
+    /* ============================================================
+       LAYOUT DES GRUNDRISSES
+
+       "quer" ab 760 px: vier Räume oben, vier unten, Flur waagerecht.
+       "hoch" darunter:  zwei Spalten, vier Reihen, Flur senkrecht.
+                         Damit bleibt der Grundriss auch auf dem
+                         Smartphone ein Grundriss und wird nicht zur
+                         Liste. Getippt wird auf Flächen von rund
+                         130 × 120 Punkten.
+       ============================================================ */
+
+    var layout = "quer";
+
+    function ermittleLayout() {
+        if (window.matchMedia && window.matchMedia("(min-width: 760px)").matches) {
+            return "quer";
+        }
+        return "hoch";
+    }
+
+    function geometrie(raum, index) {
+        var reihe, spalte;
+
+        if (layout === "quer") {
+            reihe = index < 5 ? 0 : 1;
+            spalte = index % 5;
+
+            return {
+                x: 42 + spalte * 185,
+                y: reihe === 0 ? 40 : 320,
+                w: 177,
+                h: 200,
+                tuer: reihe === 0 ? "unten" : "oben"
+            };
+        }
+
+        reihe = Math.floor(index / 2);
+        spalte = index % 2;
+
+        return {
+            x: spalte === 0 ? 15 : 220,
+            y: 20 + reihe * 124,
+            w: 145,
+            h: 112,
+            tuer: spalte === 0 ? "rechts" : "links"
+        };
+    }
+
+    function tuerMarkup(g) {
+        var cx = g.x + g.w / 2;
+        var cy = g.y + g.h / 2;
+        var svg = "";
+
+        if (g.tuer === "unten" || g.tuer === "oben") {
+            var tuerY = g.tuer === "unten" ? g.y + g.h : g.y;
+            var ry = g.tuer === "unten" ? 1 : -1;
+
+            svg += '<rect class="plan-gap" x="' + (cx - 26) + '" y="' + (tuerY - 3) +
+                '" width="52" height="6" />';
+            svg += '<path class="plan-swing" d="M' + (cx - 26) + " " + tuerY +
+                " L" + (cx - 26) + " " + (tuerY + 40 * ry) +
+                " A40 40 0 0 " + (ry === 1 ? "0" : "1") + " " + (cx + 14) + " " + tuerY + '" />';
+            return svg;
+        }
+
+        var tuerX = g.tuer === "rechts" ? g.x + g.w : g.x;
+        var rx = g.tuer === "rechts" ? 1 : -1;
+
+        svg += '<rect class="plan-gap" x="' + (tuerX - 3) + '" y="' + (cy - 20) +
+            '" width="6" height="32" />';
+        svg += '<path class="plan-swing" d="M' + tuerX + " " + (cy - 20) +
+            " L" + (tuerX + 30 * rx) + " " + (cy - 20) +
+            " A30 30 0 0 " + (rx === 1 ? "1" : "0") + " " + tuerX + " " + (cy + 10) + '" />';
+        return svg;
+    }
+
+    function stempelMarkup(raum, g) {
+        var hoch = layout === "hoch";
+        var ringId = "ringpfad-" + raum.id;
+        var mx = hoch ? (g.x + g.w - 26) : (g.x + g.w - 46);
+        var my = hoch ? (g.y + g.h - 26) : (g.y + g.h - 48);
+        var svg = "";
+
+        var mitte = NUTZE_SIGNET
+            ? '<use href="#ba-signet" xlink:href="#ba-signet" x="-19" y="-24" ' +
+              'width="38" height="38" fill="' + STEMPELFARBE + '" />'
+            : '<path d="M-11 0l7.5 7.5L11 -8" fill="none" stroke="' + STEMPELFARBE +
+              '" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" />';
+
+        svg += '<g class="plan-stamp" transform="translate(' + mx + "," + my +
+            ') rotate(-8) scale(' + (hoch ? ".55" : ".85") + ')' +
+            '"><g class="plan-stamp-in" opacity=".88">' +
+            '<circle r="39" fill="none" stroke="' + STEMPELFARBE + '" stroke-width="2.6" />' +
+            '<circle r="30" fill="none" stroke="' + STEMPELFARBE + '" stroke-width="1" />';
+
+        /* Ringschrift und Raumnummer nur im querformatigen Grundriss:
+           heruntergerechnet wären sie auf dem Telefon nicht mehr lesbar. */
+        if (!hoch) {
+            svg += '<path id="' + ringId + '" fill="none" d="M-34 0A34 34 0 0 1 34 0" />' +
+                '<text class="stamp-ring" fill="' + STEMPELFARBE + '">' +
+                '<textPath href="#' + ringId + '" xlink:href="#' + ringId +
+                '" startOffset="50%" text-anchor="middle">RUNDGANG · ERLEDIGT</textPath></text>';
+        }
+
+        svg += mitte;
+
+        if (!hoch) {
+            svg += '<text class="stamp-nr" x="0" y="22" text-anchor="middle" fill="' +
+                STEMPELFARBE + '">' + raum.nr + "</text>";
+        }
+
+        return svg + "</g></g>";
+    }
+
+    /* SVG-Text bricht nicht von selbst um – CSS kann daran nichts
+       ändern. Lange Titel werden deshalb hier in bis zu zwei Zeilen
+       zerlegt, bevorzugt an einem Leerzeichen oder Bindestrich nahe
+       der Mitte. Wörter ohne Trennstelle bleiben einzeilig. */
+    function umbruch(text, maxZeichen) {
+        var mitte, beste, i, zeichen;
+
+        if (text.length <= maxZeichen) { return [text]; }
+
+        mitte = Math.floor(text.length / 2);
+        beste = -1;
+
+        for (i = 0; i < text.length; i++) {
+            zeichen = text.charAt(i);
+            if (zeichen !== " " && zeichen !== "-") { continue; }
+            if (beste < 0 || Math.abs(i - mitte) < Math.abs(beste - mitte)) { beste = i; }
+        }
+
+        if (beste < 0) { return [text]; }
+
+        if (text.charAt(beste) === "-") {
+            return [text.substring(0, beste + 1), text.substring(beste + 1)];
+        }
+        return [text.substring(0, beste), text.substring(beste + 1)];
+    }
+
+    function zeilenMarkup(zeilen, x, y, abstand, klasse) {
+        var s = '<text class="' + klasse + '" x="' + x + '" y="' + y +
+            '" text-anchor="middle">';
+        var i;
+
+        for (i = 0; i < zeilen.length; i++) {
+            s += '<tspan x="' + x + '" dy="' + (i === 0 ? 0 : abstand) + '">' +
+                zeilen[i] + "</tspan>";
+        }
+        return s + "</text>";
+    }
+
+    function raumMarkup(raum, index) {
+        var g = geometrie(raum, index);
+        var hoch = layout === "hoch";
+        var cx = g.x + g.w / 2;
+        var fertig = geloest[raum.id] ? true : false;
+        var svg = "";
+
+        svg += '<g class="plan-room farbe-' + farbeVon(raum.id) +
+            (fertig ? " is-done" : "") +
+            (aktiv === raum.id ? " is-active" : "") +
+            '" data-id="' + raum.id + '" role="button" tabindex="0" aria-label="' +
+            raum.nr + ", " + raum.titel + ", " + raum.kurz + ", " + raum.tag +
+            ". Status: " + (fertig ? "abgeschlossen" : "Aufgabe offen") + '.">';
+
+        svg += '<rect class="plan-shell" x="' + g.x + '" y="' + g.y +
+            '" width="' + g.w + '" height="' + g.h + '" rx="' + (hoch ? 12 : 14) + '" />';
+
+        svg += tuerMarkup(g);
+
+        svg += '<text class="plan-num" x="' + (g.x + (hoch ? 10 : 14)) + '" y="' +
+            (g.y + (hoch ? 19 : 25)) + '">' + raum.nr + "</text>";
+
+        svg += '<circle class="plan-disc" cx="' + cx + '" cy="' +
+            (g.y + (hoch ? 44 : 68)) + '" r="' + (hoch ? 19 : 25) + '" />';
+        svg += '<g class="plan-icon"><use href="#' + raum.icon + '" xlink:href="#' + raum.icon +
+            '" x="' + (cx - (hoch ? 12 : 14)) + '" y="' + (g.y + (hoch ? 32 : 54)) +
+            '" width="' + (hoch ? 24 : 28) + '" height="' + (hoch ? 24 : 28) + '" /></g>';
+
+        var zeilen = umbruch(raum.titel, hoch ? 17 : 20);
+        var zwei = zeilen.length > 1;
+        var titelY = hoch ? (zwei ? g.y + 76 : g.y + 84) : (zwei ? g.y + 114 : g.y + 122);
+
+        svg += zeilenMarkup(zeilen, cx, titelY, hoch ? 15 : 18, "plan-title");
+
+        /* Untertitel und Statuszeile kosten auf dem Telefon zu viel
+           Platz – beides steht in der Detailkarte. */
+        if (!hoch) {
+            svg += '<text class="plan-sub" x="' + cx + '" y="' +
+                (g.y + (zwei ? 152 : 142)) + '" text-anchor="middle">' +
+                raum.kurz + "</text>";
+            svg += '<text class="plan-hint" x="' + cx + '" y="' +
+                (g.y + (zwei ? 176 : 170)) + '" text-anchor="middle">AUFGABE OFFEN</text>';
+        }
+
+        svg += stempelMarkup(raum, g);
+        svg += "</g>";
+        return svg;
+    }
+
+    function zeichneRahmen() {
+        var plan = document.getElementById("plan");
+        var base = document.getElementById("planBase");
+        var top = document.getElementById("planTop");
+
+        if (layout === "quer") {
+            plan.setAttribute("viewBox", "0 0 1000 560");
+            plan.setAttribute("class", "plan plan-quer");
+
+            base.innerHTML =
+                '<rect x="18" y="18" width="964" height="524" rx="22" fill="#f8fbfd" />' +
+                '<rect x="18" y="18" width="964" height="524" rx="22" fill="url(#raster)" />' +
+                '<rect x="22" y="242" width="956" height="76" fill="#eaf0f6" />' +
+                '<path class="plan-route" d="M100 280H930" />';
+
+            top.innerHTML =
+                '<rect x="18" y="18" width="964" height="524" rx="22" fill="none" ' +
+                'stroke="#14263f" stroke-width="4" />' +
+                '<rect x="14" y="256" width="10" height="48" fill="#eaf0f6" />' +
+                '<text x="36" y="252" class="plan-num" fill="#e2001a">EINGANG</text>' +
+                '<text x="944" y="286" class="plan-num" text-anchor="end">FLUR</text>';
+            return;
+        }
+
+        plan.setAttribute("viewBox", "0 0 380 660");
+        plan.setAttribute("class", "plan plan-hoch");
+
+        base.innerHTML =
+            '<rect x="5" y="5" width="370" height="650" rx="16" fill="#f8fbfd" />' +
+            '<rect x="5" y="5" width="370" height="650" rx="16" fill="url(#rasterKlein)" />' +
+            '<rect x="160" y="8" width="60" height="644" fill="#eaf0f6" />' +
+            '<path class="plan-route" d="M190 66V632" />';
+
+        top.innerHTML =
+            '<rect x="5" y="5" width="370" height="650" rx="16" fill="none" ' +
+            'stroke="#14263f" stroke-width="3" />' +
+            '<rect x="166" y="2" width="48" height="8" fill="#eaf0f6" />' +
+            '<path d="M190 20v18" stroke="#e2001a" stroke-width="2" fill="none" />' +
+            '<path d="M185 33l5 6 5-6" stroke="#e2001a" stroke-width="2" fill="none" ' +
+            'stroke-linecap="round" stroke-linejoin="round" />' +
+            '<text x="190" y="646" class="plan-num" text-anchor="middle">FLUR</text>';
+    }
+
+    function zeichneGrundriss() {
+        var s = "";
+        var i;
+        for (i = 0; i < raeume.length; i++) {
+            s += raumMarkup(raeume[i], i);
+        }
+        planRooms.innerHTML = s;
+    }
+
+    function bewegeMarker(raum) {
+        var index = -1;
+        var g, x, y, skal;
+        var i;
+
+        for (i = 0; i < raeume.length; i++) {
+            if (raum && raeume[i].id === raum.id) { index = i; }
+        }
+
+        if (layout === "quer") {
+            x = raum ? (geometrie(raum, index).x + geometrie(raum, index).w / 2) : 100;
+            y = 280;
+            skal = 1;
+        } else {
+            x = 190;
+            if (raum) {
+                g = geometrie(raum, index);
+                y = g.y + g.h / 2;
+            } else {
+                y = 58;
+            }
+            skal = .75;
+        }
+
+        planMarker.style.transform =
+            "translate(" + x + "px," + y + "px) scale(" + skal + ")";
+    }
+
+    function zeichneListe() {
+        var s = "";
+        var i, raum;
+        for (i = 0; i < raeume.length; i++) {
+            raum = raeume[i];
+            s += '<button type="button" class="room-list-btn farbe-' + farbeVon(raum.id) +
+                (geloest[raum.id] ? " is-done" : "") +
+                '" data-id="' + raum.id + '">' +
+                '<span class="rl-num">' + raum.nr + "</span>" +
+                "<b>" + raum.titel + "</b>" +
+                '<span class="rl-state">' +
+                (geloest[raum.id] ? "ERLEDIGT" : "OFFEN") + "</span>" +
+                "</button>";
+        }
+        roomList.innerHTML = s;
+    }
+
+    function zeichneLaufzettel(neuerStempel) {
+        var s = "";
+        var i;
+        var n = anzahlGeloest();
+
+        for (i = 0; i < raeume.length; i++) {
+            s += '<span class="slot' + (geloest[raeume[i].id] ? " is-filled" : "") + '"></span>';
+        }
+
+        /* Ohne neuen Stempel die Animation überspringen, damit sie
+           beim Laden nicht achtmal gleichzeitig läuft. */
+        slots.innerHTML = s;
+        if (!neuerStempel) {
+            var gefuellte = slots.querySelectorAll(".is-filled");
+            for (i = 0; i < gefuellte.length; i++) {
+                gefuellte[i].style.animation = "none";
+            }
+        }
+
+        trackerCount.textContent = n + " / " + raeume.length + " Stempel";
+        progressBar.setAttribute("aria-valuenow", String(n));
+        progressBar.setAttribute("aria-valuetext",
+            n + " von " + raeume.length + " Stempeln gesammelt");
+
+        if (n === raeume.length) {
+            finish.classList.add("is-visible");
+        } else {
+            finish.classList.remove("is-visible");
+        }
+    }
+
+    /* ============================================================
+       DETAILKARTE
+       ============================================================ */
+
+    function oeffneRaum(id) {
+        var raum = findeRaum(id);
+        if (!raum) { return; }
+
+        aktiv = id;
+        detail.hidden = false;
+        detail.className = "sheet acc-" + farbeVon(id);
+
+        detailIcon.innerHTML = '<use href="#' + raum.icon +
+            '" xlink:href="#' + raum.icon + '" />';
+        detailNum.textContent = "Raum " + raum.nr;
+        detailTitle.textContent = raum.titel;
+        detailTag.textContent = raum.tag;
+        detailText.textContent = raum.text;
+        detailNote.textContent = raum.notiz;
+
+        var f = "";
+        var i;
+        for (i = 0; i < raum.fakten.length; i++) {
+            f += '<div class="fact"><strong>' + raum.fakten[i][0] + "</strong><span>" +
+                raum.fakten[i][1] + "</span></div>";
+        }
+        detailFacts.innerHTML = f;
+
+        quizQuestion.textContent = raum.frage;
+        quizFeedback.textContent = "";
+        quizFeedback.className = "feedback";
+        zeichneAntworten(raum);
+        zeichneWeiterButton();
+
+        if (raum.link) {
+            intranetLink.href = raum.link;
+            intranetBox.hidden = false;
+        } else {
+            intranetBox.hidden = true;
+        }
+
+        zeichneGrundriss();
+        zeichneListe();
+        bewegeMarker(raum);
+
+        /* Erst die Karte an den oberen Rand holen, dann den Fokus
+           setzen. Ohne preventScroll würde der Browser ein zweites
+           Mal scrollen und der Abschnitt darüber bliebe im Bild. */
+        detail.scrollIntoView({
+            behavior: bewegungReduziert() ? "auto" : "smooth",
+            block: "start"
+        });
+
+        try {
+            detailTitle.focus({ preventScroll: true });
+        } catch (e) {
+            detailTitle.focus();
+        }
+    }
+
+    function zeichneAntworten(raum) {
+        var s = "";
+        var i;
+        for (i = 0; i < raum.antworten.length; i++) {
+            s += '<button type="button" class="answer" data-index="' + i + '">' +
+                '<span class="answer-key" aria-hidden="true">' + buchstaben[i] + "</span>" +
+                "<span>" + raum.antworten[i] + "</span></button>";
+        }
+        quizAnswers.innerHTML = s;
+
+        if (geloest[raum.id]) {
+            markiereLoesung(raum);
+        }
+    }
+
+    function naechsterOffener() {
+        var i;
+        for (i = 0; i < raeume.length; i++) {
+            if (!geloest[raeume[i].id]) { return raeume[i]; }
+        }
+        return null;
+    }
+
+    /* Auf dem Telefon liegt der Grundriss nach dem Öffnen eines Raums
+       weit oben. Der Weiter-Knopf erspart das Zurückscrollen. */
+    function zeichneWeiterButton() {
+        var naechster;
+        nextWrap.innerHTML = "";
+
+        if (!aktiv || !geloest[aktiv]) { return; }
+
+        naechster = naechsterOffener();
+
+        if (naechster) {
+            nextWrap.innerHTML = '<button type="button" class="btn next-btn" data-id="' +
+                naechster.id + '">Weiter: ' + naechster.titel + " →</button>";
+        } else {
+            nextWrap.innerHTML = '<a class="btn next-btn" href="#finish">' +
+                "Laufzettel ansehen →</a>";
+        }
+    }
+
+    function markiereLoesung(raum) {
+        var knoepfe = quizAnswers.querySelectorAll(".answer");
+        var i;
+        for (i = 0; i < knoepfe.length; i++) {
+            knoepfe[i].disabled = true;
+            if (i === raum.richtig) {
+                knoepfe[i].className = "answer is-right";
+            }
+        }
+        quizFeedback.className = "feedback good";
+        quizFeedback.textContent = raum.loesung;
+    }
+
+    quizAnswers.addEventListener("click", function (e) {
+        var knopf = e.target.closest ? e.target.closest(".answer") : null;
+        if (!knopf || knopf.disabled) { return; }
+
+        var raum = findeRaum(aktiv);
+        if (!raum) { return; }
+
+        var index = parseInt(knopf.getAttribute("data-index"), 10);
+
+        if (index === raum.richtig) {
+            geloest[raum.id] = true;
+            speichereFortschritt();
+            markiereLoesung(raum);
+            zeichneGrundriss();
+            zeichneListe();
+            zeichneLaufzettel(true);
+            zeichneWeiterButton();
+        } else {
+            knopf.className = "answer is-wrong";
+            knopf.disabled = true;
+            quizFeedback.className = "feedback bad";
+            quizFeedback.textContent = raum.hinweise[index] + " Versuch es noch einmal.";
+        }
+    });
+
+    /* ============================================================
+       BEDIENUNG
+       ============================================================ */
+
+    function raumAusEvent(e) {
+        var el = e.target;
+        while (el && el !== planRooms) {
+            if (el.getAttribute && el.getAttribute("data-id")) {
+                return el.getAttribute("data-id");
+            }
+            el = el.parentNode;
+        }
+        return null;
+    }
+
+    planRooms.addEventListener("click", function (e) {
+        var id = raumAusEvent(e);
+        if (id) { oeffneRaum(id); }
+    });
+
+    planRooms.addEventListener("keydown", function (e) {
+        if (e.key !== "Enter" && e.key !== " " && e.key !== "Spacebar") { return; }
+        var id = raumAusEvent(e);
+        if (!id) { return; }
+        e.preventDefault();
+        oeffneRaum(id);
+    });
+
+    nextWrap.addEventListener("click", function (e) {
+        var knopf = e.target.closest ? e.target.closest(".next-btn") : null;
+        if (knopf && knopf.getAttribute("data-id")) {
+            oeffneRaum(knopf.getAttribute("data-id"));
+        }
+    });
+
+    roomList.addEventListener("click", function (e) {
+        var knopf = e.target.closest ? e.target.closest(".room-list-btn") : null;
+        if (knopf) { oeffneRaum(knopf.getAttribute("data-id")); }
+    });
+
+    document.getElementById("resetButton").addEventListener("click", function () {
+        geloest = {};
+        aktiv = null;
+        detail.hidden = true;
+        loescheSpeicher();
+        restoredNote.hidden = true;
+        nextWrap.innerHTML = "";
+        zeichneGrundriss();
+        zeichneListe();
+        zeichneLaufzettel(false);
+        bewegeMarker(null);
+        document.getElementById("grundriss").scrollIntoView({ block: "start" });
+    });
+
+    /* Layoutwechsel: nur neu zeichnen, wenn tatsächlich gewechselt
+       wird. Sonst würde jede Adressleisten-Animation auf dem Telefon
+       den Grundriss neu aufbauen. */
+    var wechselTimer = null;
+
+    window.addEventListener("resize", function () {
+        if (wechselTimer) { window.clearTimeout(wechselTimer); }
+        wechselTimer = window.setTimeout(function () {
+            var neuesLayout = ermittleLayout();
+            if (neuesLayout === layout) { return; }
+            layout = neuesLayout;
+            zeichneRahmen();
+            zeichneGrundriss();
+            bewegeMarker(findeRaum(aktiv));
+        }, 200);
+    });
+
+    if (ladeFortschritt()) {
+        restoredNote.hidden = false;
+    }
+
+    layout = ermittleLayout();
+    zeichneRahmen();
+    zeichneGrundriss();
+    zeichneListe();
+    zeichneLaufzettel(false);
+    bewegeMarker(null);
+})();
+</script>
+
+</body>
+</html>
